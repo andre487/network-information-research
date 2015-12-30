@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Статистика NetworkInformation</title>
+
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            .body
+            {
+                max-width: 980px;
+                font-family: 'Courier New', monospace;
+            }
+
+            .body.loading
+            {
+                opacity: 0;
+            }
+
+            .content-part
+            {
+                margin: 0 0 10px 0;
+            }
+
+            .greetings
+            {
+                margin-top: 30px;
+
+                font-weight: bold;
+            }
+
+            .links
+            {
+                margin: 30px 0 0 0;
+            }
+        </style>
+    </head>
+    <body class="body loading">
+        <h1>Собираем статистику NetworkInformation</h1>
+
+        <div id="result" class="content-part"></div>
+        <div id="greetings" class="content-part greetings">
+            Спасибо! Данные про API уже записаны, но будет еще лучше, если Вы введете модель девайса,
+            находясь на девайсе в том же браузере
+        </div>
+
+        <div id="device-model" class="content-part device-model">
+            <form id="device-model-form">
+                <input type="hidden" name="sessionId">
+                <input type="text" name="deviceModel" placeholder="Модель девайса" required>
+                <input type="submit">
+            </form>
+        </div>
+
+        <div class="links">
+            <h2>Удобные ссылки</h2>
+            <p>https://clck.ru/9eu8w</p>
+            <p><img src="qr.png" alt=""></p>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.0.4/js.cookie.js"></script>
+        <script>
+            var LOGGER_URL = 'http://andre.life/stat';
+
+            (function() {
+                var sessionId = setupSessionId();
+                var data = getData();
+
+                sendLogs(sessionId, data);
+                showResult(data);
+
+                setupDeviceModelForm(sessionId, data);
+
+                document.body.classList.remove('loading');
+            })();
+
+            function setupSessionId() {
+                var sessionId = Cookies.get('sessionId');
+                if (!sessionId) {
+                    sessionId = Math.random();
+                    Cookies.set('sessionId', sessionId, { expires: 7, path: '/' });
+                }
+                console.info('[Session ID]', sessionId);
+                return sessionId;
+            }
+
+            function getData() {
+                var conn = navigator.connection;
+
+                return {
+                    'Connection-API-supported': Boolean(conn),
+                    'Connection-type': conn && conn.type,
+                    'Downlink-max': conn && conn.downlinkMax,
+                    'User-agent': navigator.userAgent
+                }
+            }
+
+            function showResult(data) {
+                var result = Object.keys(data).reduce(function(result, key) {
+                    var p = document.createElement('p');
+                    p.innerHTML = '<b>' + key + '</b>: ' + data[key];
+
+                    result.appendChild(p);
+                    return result;
+                }, document.createDocumentFragment());
+
+                document.getElementById('result').appendChild(result);
+            }
+
+            function setupDeviceModelForm(sessionId, apiData) {
+                var block = document.getElementById('device-model');
+                block.classList.remove('disabled');
+
+                var form = document.getElementById('device-model-form');
+                form.sessionId.value = sessionId;
+
+                form.onsubmit = function(e) {
+                    e.preventDefault();
+
+                    var deviceData = [].reduce.call(form.elements, function(result, elem) {
+                        if (elem.name) {
+                            result[elem.name] = elem.value;
+                        }
+                        return result;
+                    }, cloneObject(apiData));
+
+                    sendLogs(sessionId, deviceData);
+
+                    alert('Спасибо!');
+                    form.reset();
+                };
+            }
+
+            function sendLogs(sessionId, logData) {
+                logData = cloneObject(logData);
+                logData.sessionId = sessionId;
+
+                var vars = Object.keys(logData).map(function(key) {
+                    var val = String(logData[key]);
+                    return encodeURI(key.toLowerCase()) + ':' + encodeURIComponent(val.toLowerCase());
+                });
+
+                new Image().src = LOGGER_URL + '?type=connection-api:data&data=' + vars.join(',');
+            }
+
+            function cloneObject(obj) {
+                return Object.keys(obj).reduce(function(result, key) {
+                    result[key] = obj[key];
+                    return result;
+                }, {});
+            }
+
+            window.onerror = function(message, url, line, col, err) {
+                var errData = 'message:' + message +
+                        ',line:' + line +
+                        ',col:' + col +
+                        ',stack:' + String(err && err.stack);
+                new Image().src = LOGGER_URL + '?type=connection-api:error&data=' + errData;
+            };
+        </script>
+    </body>
+</html>
