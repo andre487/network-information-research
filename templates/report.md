@@ -5,6 +5,11 @@ User agents with API support: {{supported_count}}
 
 And without that: {{unsupported_count}}
 
+## Logged devices
+{% for item in all_devices %}
+  * {{item}}
+{% endfor %}
+
 ## User agents stats
 User agents with support:
 {% for item in supported_items %}

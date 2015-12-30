@@ -49,6 +49,7 @@ def collect_api_by_device_stats(db):
         ('unsupported', set()),
         ('connection_types', set()),
         ('downlink_max', set()),
+        ('devices', set()),
         ('data', OrderedDict())
     ))
     return reduce(handle_device_record, cursor, stats)
@@ -64,6 +65,9 @@ def handle_device_record(stats, row):
 
     ua_key = '{family} {major}.{minor}'.format(**device_data['user_agent'])
     merged_key = os_key + ' ' + ua_key
+
+    if row['device_model']:
+        stats['devices'].add(row['device_model'])
 
     if row['api_supported']:
         if os_key not in stats_data:
@@ -110,6 +114,7 @@ def print_results(hits_count, stats_by_device):
     report = tpl_env.get_template('report.md').render(
             hits_count=hits_count,
             supported_count=len(stats_by_device['supported']),
+            all_devices=sorted(stats_by_device['devices']),
             unsupported_count=len(stats_by_device['unsupported']),
             supported_items=stats_by_device['supported'],
             unsupported_items=stats_by_device['unsupported'],
