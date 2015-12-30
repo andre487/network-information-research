@@ -36,7 +36,8 @@ def collect_api_by_device_stats(db):
             connection_type,
             downlink_max,
             log_agent,
-            api_supported
+            api_supported,
+            device_model
         FROM
             stats
         ORDER BY
@@ -71,6 +72,7 @@ def handle_device_record(stats, row):
         if ua_key not in stats_data[os_key]:
             stats_data[os_key][ua_key] = {
                 'api_supported': 0,
+                'supported_devices': set(),
                 'connection_type': set(),
                 'downlink_max': set()
             }
@@ -89,6 +91,9 @@ def handle_device_record(stats, row):
         stats_data[os_key][ua_key]['api_supported'] += row['api_supported']
         stats_data[os_key][ua_key]['connection_type'].add(row['connection_type'])
         stats_data[os_key][ua_key]['downlink_max'].add(downlink_max)
+
+        if row['device_model']:
+            stats_data[os_key][ua_key]['supported_devices'].add(row['device_model'])
 
         return stats
 
@@ -131,8 +136,9 @@ def get_detailed_stats(stats_by_device):
             ua_data = os_data[ua_key]
             add_report_details(ua_key, 1)
 
-            for stat_name in ('api_supported', 'connection_type', 'downlink_max'):
-                add_report_details(stat_name + ': ' + str(ua_data[stat_name]), 2)
+            for stat_name in ('api_supported', 'supported_devices', 'connection_type', 'downlink_max'):
+                val = stat_name + ': ' + str(ua_data[stat_name]).strip()
+                add_report_details(val, 2)
 
     return detailed_stats.strip()
 
