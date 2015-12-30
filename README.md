@@ -3,6 +3,8 @@
 Statistics was collected by a `client` code to a `stats.log` that had an "access.log" format.
 
 # Collected NetworkInformation statistics
+Log data: http://pastebin.com/S5gXaXYU
+
 Hits count: 264
 
 User agents with API support: 28
